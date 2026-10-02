@@ -7,6 +7,16 @@ const MAP_SHARED = 0x1, MAP_PRIVATE_ANON = 0x1002;
 const DEFAULT_KEXP = "kexp_2026_05_25.bin";
 const DEFAULT_ELFLDR = "elfldr-ps5-1360.elf";
 
+// Wait this long before loading each autoload payload. Press R2 during the
+// countdown to cancel the rest of the list.
+const AUTOLOAD_DELAY_MS = 3000;
+
+// Payloads loaded automatically, in order, once the kernel exploit is done.
+const AUTOLOAD_PAYLOADS = [
+  "kstuff-1.13-fpkg-dr-test5.elf",
+  "ShadowMountPlus1.7beta3.elf",
+];
+
 const SHELLCODE = {
   size: 18912,
   resolverCalls: [
@@ -153,11 +163,46 @@ async function sendElf(name, payload, p, chain) {
   }
 }
 
-export async function loadOptionalPayloads(p, chain, log) {
-  log("preparing optional payloads");
-  const kstuff = await mapElf("kstuff-1.13-fpkg-dr-test5.elf", p, chain);
-  await sendElf("kstuff-1.13-fpkg-dr-test5.elf", kstuff, p, chain);
-  log("kstuff-1.13-fpkg-dr-test5.elf sent");
+// Resolves true once the wait elapses, or false as soon as R2 cancels.
+function delay(cancelled, ms) {
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => resolve(true), ms);
+    cancelled.then(() => {
+      clearTimeout(timer);
+      resolve(false);
+    });
+  });
+}
+
+export async function loadOptionalPayloads(p, chain, log, control) {
+  const say = typeof log === "function" ? log : () => { };
+  const names = AUTOLOAD_PAYLOADS.map((name) => name.trim()).filter(Boolean);
+  if (!names.length) {
+    say("autoload list is empty", "info");
+    return;
+  }
+
+  const cancelled = control && control.cancelled ? control.cancelled : new Promise(() => { });
+  say("autoloading " + names.length + " payload(s), press R2 to cancel", "info");
+
+  for (const name of names) {
+    say("loading " + name + " in " + AUTOLOAD_DELAY_MS / 1000 + "s", "info");
+    if (!(await delay(cancelled, AUTOLOAD_DELAY_MS))) {
+      say("autoload cancelled, remaining payload(s) will not be loaded", "info");
+      return;
+    }
+
+    try {
+      const payload = await mapElf(name, p, chain);
+      await sendElf(name, payload, p, chain);
+      say(name + " sent", "info");
+    } catch (error) {
+      // One bad entry must not block the rest of the list.
+      say(name + " failed: " + String((error && error.message) || error), "error");
+    }
+  }
+
+  say("autoload complete", "info");
 }
 
 function patchShellcode(blob, symbols) {

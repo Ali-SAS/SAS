@@ -5,7 +5,22 @@ Supported firmware: 7.00 through 13.60.
 - In the network settings, set Primary DNS to `45.56.67.85` (Recommended)
 - Run `python serve.py` locally, or open https://m2k7m.github.io/Relapse-Exploit/ on the PS5.
 - The default payloads are stored in `payloads/` after a successful run, the ELF loader listens on port `9021`.
-- After elfldr starts on port `9021`, you can press R2 to send `kstuff-1.13-fpkg-dr-test5.elf`.
+- Once the kernel exploit finishes and elfldr is listening, the payload list starts loading on its own, 3 seconds before each payload.
+- Press R2 during any of the countdowns to cancel. The remaining payloads are not loaded and the page has to be reloaded to try again.
+
+## Payloads
+The autoload list is `AUTOLOAD_PAYLOADS` in [`src/kexp.js`](src/kexp.js), payloads are sent in list order.
+
+To add one:
+1. Copy the ELF into `payloads/`.
+2. Add its filename to `AUTOLOAD_PAYLOADS`, the name has to match the file exactly.
+
+```js
+const AUTOLOAD_PAYLOADS = [
+  "kstuff-1.13-fpkg-dr-test5.elf",
+  "ShadowMountPlus1.7beta3.elf",
+];
+```
 
 ## Stability notes
 Webkit may need several attempts, reload the page if the browser stalls. The kernel exploit may hang or panic the console, so reboot before trying again if that happens.

@@ -80,16 +80,25 @@ function log(message, type = "log") {
   window.writeLog(message, type);
 }
 
-function watchR2(onPress) {
+// R2 cancels the autoloader.
+function createR2CancelGuard() {
+  let cancelled = false;
+  let resolveCancel;
+  const cancelledPromise = new Promise((resolve) => { resolveCancel = resolve; });
+
   function onKey(event) {
     if (event.key !== "F8" || event.code !== "Unidentified") return;
-    window.removeEventListener("keydown", onKey, true);
     event.preventDefault();
-    onPress();
+    if (cancelled) return;
+    cancelled = true;
+    resolveCancel();
   }
 
-  log("press R2 to load kstuff-1.13-fpkg-dr-test5.elf.", "info");
   window.addEventListener("keydown", onKey, true);
+  return {
+    cancelled: cancelledPromise,
+    stop: () => window.removeEventListener("keydown", onKey, true),
+  };
 }
 
 const ROP_WAIT_MS = 20000;
@@ -281,14 +290,17 @@ async function main(userlandRW) {
   if (result.payloads) {
     log("kernel exploit complete", "info");
     log("elfldr is listening on port 9021", "info");
-    watchR2(async () => {
-      try {
-        const { loadOptionalPayloads } = await import("./kexp.js");
-        await loadOptionalPayloads(p, chain, (message) => log(message, "info"));
-      } catch (error) {
-        log(error instanceof Error ? error.message : String(error), "error");
-      }
-    });
+    log("autoload starting...", "info");
+
+    const guard = createR2CancelGuard();
+    try {
+      const { loadOptionalPayloads } = await import("./kexp.js");
+      await loadOptionalPayloads(p, chain, (message) => log(message, "info"), guard);
+    } catch (error) {
+      log(error instanceof Error ? error.message : String(error), "error");
+    } finally {
+      guard.stop();
+    }
   } else {
     log("kernel chain complete: root and sandbox escape are active", "info");
   }
