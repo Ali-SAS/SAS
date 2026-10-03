@@ -18,7 +18,7 @@ To add one:
 ```js
 const AUTOLOAD_PAYLOADS = [
   "kstuff-1.13-fpkg-dr-test5.elf",
-  "ShadowMountPlus1.7beta3.elf",
+  "ShadowMountPlus_1.7beta4.elf",
 ];
 ```
 
