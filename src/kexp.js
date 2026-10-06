@@ -13,10 +13,8 @@ const AUTOLOAD_DELAY_MS = 3000;
 
 // Payloads loaded automatically, in order, once the kernel exploit is done.
 const AUTOLOAD_PAYLOADS = [
-  // "kstuff-1.13-fpkg-dr-test5.elf",
-  // "ShadowMountPlus_1.7beta4.elf",
-  "gdbsrv-ps5.elf",
-  "shsrv-ps5.elf"
+  "kstuff-1.13-fpkg-dr-test5.elf",
+  "ShadowMountPlus_1.7beta4.elf",
 ];
 
 const SHELLCODE = {
