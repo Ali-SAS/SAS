@@ -15,6 +15,7 @@ const AUTOLOAD_DELAY_MS = 3000;
 const AUTOLOAD_PAYLOADS = [
   "kstuff-1.13-fpkg-dr-test5.elf",
   "ShadowMountPlus_1.7beta4.elf",
+  "CheatRunner.elf",
 ];
 
 const SHELLCODE = {
